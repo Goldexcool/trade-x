@@ -2,6 +2,7 @@ import express from 'express'
 import { config } from './config/env.ts'
 import { connect, db } from './database/data-source.ts'
 import { redis } from './database/redis.ts'
+import { startJobs } from './jobs.ts'
 import { authRouter } from './modules/auth/auth.routes.ts'
 import { seedAdmin } from './modules/auth/auth.service.ts'
 import { cartRouter } from './modules/cart/cart.routes.ts'
@@ -28,3 +29,4 @@ app.use(errorHandler)
 await connect({ migrate: true })
 await seedAdmin()
 app.listen(config.port, () => console.log(`api listening on :${config.port}`))
+if (config.runWorker) startJobs()

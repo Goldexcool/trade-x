@@ -110,6 +110,15 @@ npm run email:preview   # renders every template to .email-previews/
 
 The visual system is documented in [EMAIL_DESIGN.md](EMAIL_DESIGN.md).
 
+## Deploy (Render)
+
+`render.yaml` is a Blueprint (Dashboard → New → Blueprint). One free web service runs the whole app:
+
+- **Redis is built into the image.** When `REDIS_URL` isn't set, `docker-entrypoint.sh` starts a private in-memory Redis inside the container. Locally, Compose sets `REDIS_URL` to its own Redis container, so the embedded one stays off. A restart only drops short-lived data: pending sign-up codes, rate-limit counters and the catalog cache.
+- **`RUN_WORKER=true`** makes the API also run the background jobs (payment reconciler and email outbox).
+
+To scale later, set `REDIS_URL` to a managed Redis, set `RUN_WORKER=false`, and run `node src/worker.ts` as a separate worker.
+
 ## Webhooks (after deploy)
 
 Set the webhook URL in Paystack Dashboard → Settings → API Keys & Webhooks to `https://<your-domain>/webhooks/paystack`. Also set `PAYSTACK_CALLBACK_URL=https://<your-domain>/payments/callback`.

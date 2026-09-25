@@ -1,0 +1,46 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this repo.
+# One free web service runs everything: the API, the background jobs (RUN_WORKER=true), and an embedded
+# Redis inside the same container (started automatically because REDIS_URL is not set).
+# Secrets marked `sync: false` are asked for once in the dashboard and never stored in git.
+
+services:
+  - type: web
+    name: trade-x-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: RUN_WORKER
+        value: "true"
+      - fromGroup: trade-x
+
+  # To scale later: add a managed Redis (type: keyvalue) and set REDIS_URL from it, set RUN_WORKER=false,
+  # and run `node src/worker.ts` as a background worker.
+
+envVarGroups:
+  - name: trade-x
+    envVars:
+      - key: DATABASE_URL # Neon connection string (sslmode=verify-full)
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL # https://<your-api>.onrender.com/payments/callback
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        value: Trade-X
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: RESERVATION_MINUTES
+        value: "15"
+      - key: APP_URL
+        sync: false

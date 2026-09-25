@@ -15,6 +15,8 @@ export const config = {
   adminEmail: process.env.ADMIN_EMAIL,
   adminPassword: process.env.ADMIN_PASSWORD,
   // Optional storefront URL; emails show a "back to the store" button only when it is set.
+  // Run the background jobs inside the api process (e.g. Render free tier, no separate worker).
+  runWorker: process.env.RUN_WORKER === 'true',
   appUrl: process.env.APP_URL?.replace(/\/$/, ''),
   // Empty key = dev mode: emails are logged instead of sent.
   brevoApiKey: process.env.BREVO_API_KEY ?? '',
