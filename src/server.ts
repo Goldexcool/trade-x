@@ -2,6 +2,7 @@ import express from 'express'
 import { config } from './config/env.ts'
 import { connect, db } from './database/data-source.ts'
 import { redis } from './database/redis.ts'
+import { docsRouter } from './docs/docs.routes.ts'
 import { startJobs } from './jobs.ts'
 import { authRouter } from './modules/auth/auth.routes.ts'
 import { seedAdmin } from './modules/auth/auth.service.ts'
@@ -22,7 +23,7 @@ app.get('/health', async (_req, res) => {
   await redis.ping()
   res.json({ ok: true })
 })
-app.use(authRouter, productsRouter, cartRouter, ordersRouter)
+app.use(docsRouter, authRouter, productsRouter, cartRouter, ordersRouter)
 app.use((_req, res) => { res.status(404).json({ error: 'Not found' }) })
 app.use(errorHandler)
 

@@ -49,6 +49,8 @@ docker compose --profile test run --rm test
 
 ## API
 
+Interactive docs (Swagger UI): **`/docs`** (e.g. https://tradex-ct05.onrender.com/docs), with the raw OpenAPI 3.1 spec at `/openapi.json`. Request schemas are generated from the same zod validators the API uses.
+
 Amounts are integer **kobo**. Authenticated routes need `Authorization: Bearer <token>`.
 
 | Method | Path | Who | Notes |
