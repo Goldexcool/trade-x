@@ -1,0 +1,61 @@
+name: trade-x
+
+# api + worker use DATABASE_URL from .env (Neon). Tests use a throwaway local Postgres (profile "test").
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    REDIS_URL: redis://redis:6379
+  depends_on:
+    redis: { condition: service_healthy }
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *app
+    ports: ["${API_PORT:-3000}:3000"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 5s
+      retries: 20
+
+  worker:
+    <<: *app
+    command: ["node", "src/worker.ts"]
+    depends_on:
+      redis: { condition: service_healthy }
+      api: { condition: service_healthy } # api runs the migrations
+
+  redis:
+    image: redis:7-alpine
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  test:
+    profiles: [test]
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://tradex:tradex@test-db:5432/tradex
+      REDIS_URL: redis://redis:6379
+      BREVO_API_KEY: "" # tests never send real email
+    command: ["npm", "test"]
+    depends_on:
+      test-db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  test-db:
+    profiles: [test]
+    image: postgres:17.6-alpine
+    environment: { POSTGRES_USER: tradex, POSTGRES_PASSWORD: tradex, POSTGRES_DB: tradex }
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradex -d tradex"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  redisdata:

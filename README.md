@@ -53,8 +53,10 @@ Amounts are integer **kobo**. Authenticated routes need `Authorization: Bearer <
 
 | Method | Path | Who | Notes |
 |---|---|---|---|
-| POST | `/auth/register` | public | `{email, password}` → `{user, token}` (always customer) |
-| POST | `/auth/login` | public | `{email, password}` → `{user, token}` |
+| POST | `/auth/register` | public | `{email, password}` → 202; emails a 6-digit code (always a customer) |
+| POST | `/auth/verify-email` | public | `{email, code}` → `{user, token}`; sends the welcome email |
+| POST | `/auth/resend-code` | public | `{email}` → 202 (60s cooldown per email) |
+| POST | `/auth/login` | public | `{email, password}` → `{user, token}`; 403 until the email is verified |
 | GET | `/products` | public | `q, category, minPrice, maxPrice, inStock, sort=newest\|price_asc\|price_desc, page, limit` (admin: `includeInactive=true`) |
 | GET | `/products/:id` | public | |
 | POST | `/products` | admin | `{name, description?, category?, price_kobo, stock, is_active?}` |
@@ -77,8 +79,11 @@ ADMIN=$(curl -s localhost:3000/auth/login -H 'content-type: application/json' \
 PID=$(curl -s localhost:3000/products -H "authorization: Bearer $ADMIN" -H 'content-type: application/json' \
   -d '{"name":"Sneakers","price_kobo":2500000,"stock":2}' | jq -r .id)
 
-TOKEN=$(curl -s localhost:3000/auth/register -H 'content-type: application/json' \
-  -d '{"email":"buyer@example.com","password":"password123"}' | jq -r .token)
+curl -s localhost:3000/auth/register -H 'content-type: application/json' \
+  -d '{"email":"you@example.com","password":"password123"}'          # → check your inbox for the code
+
+TOKEN=$(curl -s localhost:3000/auth/verify-email -H 'content-type: application/json' \
+  -d '{"email":"you@example.com","code":"123456"}' | jq -r .token)
 
 curl -s -X PUT localhost:3000/cart/items/$PID -H "authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' -d '{"quantity":1}'
@@ -87,6 +92,23 @@ curl -s -X POST localhost:3000/checkout -H "authorization: Bearer $TOKEN"   # �
 ```
 
 Pay with Paystack's test card `4084 0840 8408 4081`, CVV `408`, any future expiry, PIN `0000`, OTP `123456`.
+
+## Email
+
+Trade-X sends transactional email through Brevo (`BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME`):
+
+- sign-up code
+- welcome
+- receipt
+- payment not completed
+
+Leave `BREVO_API_KEY` empty to print emails to the log instead of sending them. Set `APP_URL` to show a "back to the store" button.
+
+```bash
+npm run email:preview   # renders every template to .email-previews/
+```
+
+The visual system is documented in [EMAIL_DESIGN.md](EMAIL_DESIGN.md).
 
 ## Webhooks (after deploy)
 
